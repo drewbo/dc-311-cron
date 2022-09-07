@@ -7,6 +7,7 @@ import requests
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 
 def download_file(url):
     print(f'downloading {url}')
@@ -29,7 +30,25 @@ def check_status(url):
     response_data = r.json()
     status = response_data['data'][0]['attributes']['status'] 
     print(status) 
-    return status  
+    return status
+
+def sync_db(data, DB_URL):
+    try:
+        con = create_engine(
+            DB_URL,
+            executemany_mode="values",
+            executemany_values_page_size=1000
+        )
+        data.to_sql(
+            'requests',
+            con=con,
+            index=False,
+            if_exists='replace'
+        )
+    except OperationalError as e:
+        print(e)
+        time.sleep(5)
+        sync_db(data, DB_URL)
 
 if __name__ == "__main__":
     
@@ -55,18 +74,15 @@ if __name__ == "__main__":
     # data cleaning
     print('clean the data')
     data["SERVICETYPECODEDESCRIPTION"] = data["SERVICETYPECODEDESCRIPTION"].str.replace("Admistration", "Administration")
-
+    data["ADDDATE"] = pd.to_datetime(data["ADDDATE"])
+    data["RESOLUTIONDATE"] = pd.to_datetime(data["RESOLUTIONDATE"])
+    data["SERVICEDUEDATE"] = pd.to_datetime(data["SERVICEDUEDATE"])
+    data["SERVICEORDERDATE"] = pd.to_datetime(data["SERVICEORDERDATE"])
     # temp save
     data.to_csv('data.csv')
 
     # write to db
     print('write to db')
-    # DB_URL = os.getenv('MB_DB_CONNECTION_URI')
-    # DB_URL = DB_URL.replace("postgres://", "postgresql://")
-    # con = create_engine(DB_URL)
-    # data.to_sql(
-    #     'requests',
-    #     con=con,
-    #     index=False,
-    #     if_exists='replace'
-    # )
+    DB_URL = os.getenv('MB_DB_CONNECTION_URI')
+    DB_URL = DB_URL.replace("postgres://", "postgresql://")
+    sync_db(data, DB_URL)
