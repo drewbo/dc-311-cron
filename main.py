@@ -55,12 +55,8 @@ if __name__ == "__main__":
     id = "06a34732b59142418f9b490f24a942b9_14"
     url = f'https://opendata.arcgis.com/api/v3/datasets/{id}/downloads'
 
-    if not os.path.exists('output.csv'):
-        prep_open_data_download(url)
-        while "ready" not in check_status(url):
-            print('checking file status')
-            time.sleep(5)
-    
+    if not os.path.exists('output.csv'): # for local testing
+        prep_open_data_download(url) # only trigger this once to prep for sometime later
         download_file(f'{url}/data?spatialRefId=4326&format=csv&where=1%3D1')
 
     # spatial join smd columns to 311 data
@@ -78,8 +74,9 @@ if __name__ == "__main__":
     data["RESOLUTIONDATE"] = pd.to_datetime(data["RESOLUTIONDATE"])
     data["SERVICEDUEDATE"] = pd.to_datetime(data["SERVICEDUEDATE"])
     data["SERVICEORDERDATE"] = pd.to_datetime(data["SERVICEORDERDATE"])
+    
     # temp save
-    data.to_csv('data.csv')
+    # data.to_csv('data.csv')
 
     # write to db
     print('write to db')
