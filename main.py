@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # spatial join smd columns to 311 data
     print('perform spatial joins')
-    smd = gpd.read_file('smd2013.geojson')
+    smd = gpd.read_file('data/smd2013.geojson')
     df = pd.read_csv('output.csv')
     gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.X, df.Y), crs=smd.crs)
     joined = gdf.sjoin(smd, how="inner", predicate='within')
